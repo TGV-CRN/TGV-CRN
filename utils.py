@@ -308,9 +308,9 @@ def compute_x_ind(x_dim_predicted,dataset,n_agents,vel=True):
             #x_dim = 5
             #ind_x1 = torch.cat([torch.arange(2,n_agents*x_dim,x_dim),torch.arange(3,n_agents*x_dim,x_dim),torch.arange(4,n_agents*x_dim,x_dim)],0) 
             x_dim = 4
-            ind_x1 = torch.cat([torch.arange(2,n_agents*x_dim,x_dim),torch.arange(3,n_agents*x_dim,x_dim)],0) 
-            ind_x = torch.arange(0)
-            ind_x0 = torch.arange(0)
+            ind_x1 = torch.cat([torch.arange(0,n_agents*x_dim,x_dim),torch.arange(1,n_agents*x_dim,x_dim)],0) 
+            ind_x = torch.cat([torch.arange(0,n_agents*x_dim,x_dim),torch.arange(1,n_agents*x_dim,x_dim)],0) 
+            ind_x0 = torch.cat([torch.arange(0,n_agents*x_dim,x_dim),torch.arange(1,n_agents*x_dim,x_dim)],0) 
         else:
             x_dim = 2 
             ind_x = ind_x_all
@@ -511,8 +511,9 @@ def compute_global(x_pred,x_prev,x_prev2,x,treatment,x_demo,device,i,self_1,self
                 posxy = posxy_prev + (vel_prev2+4*vel_prev+vel_pred)/6/Fs*self_max_v 
 
             if not self_theory:
-                out[:,:self_x_dim_permuted] = torch.cat([posxy,vel_pred],2).reshape(-1,self_n_agents*dim)
-                out[:,self_x_dim_permuted:] = x_pred[:,self_x_dim_permuted:]
+                out = x_pred
+                #out[:,:self_x_dim_permuted] = torch.cat([posxy,vel_pred],2).reshape(-1,self_n_agents*dim)
+                #out[:,self_x_dim_permuted:] = x_pred[:,self_x_dim_permuted:]
         else:
             x_[:, :self_x_dim_predicted] = x_pred
             pos = x_pred[:,:self_x_dim_permuted]
@@ -593,7 +594,7 @@ def compute_global(x_pred,x_prev,x_prev2,x,treatment,x_demo,device,i,self_1,self
                 next_ballxy = ballxy
             if torch.sum(Ball_Hold == 0)>0:
                 # new ball hold
-                ind_newhold = (dist_B_ballOF <= 1) & (Ball_Hold == 0)
+                ind_newhold = (dist_B_ballOF <= 1.5) & (Ball_Hold == 0)
                 Ball_Hold[ind_newhold] = 1 
                 next_ballxy[ind_newhold] = (ballxy_prev + ball_Pball*0.5)[ind_newhold]
 
@@ -689,12 +690,13 @@ def compute_global(x_pred,x_prev,x_prev2,x,treatment,x_demo,device,i,self_1,self
                                 
                                 posxy_def = posxy_prev[b,ind_def,:] + vel_pred_def/Fs*self_max_v
                             dist_def_Pball2 = torch.sqrt(torch.sum((Pballxy[b] - posxy_def)**2))
-                            if dist_def_Pball2 >= 2*0.3048:
+                            if dist_def_Pball2 >= 4*0.3048:
                                 if dim==5:
                                     vel_pred[b,ind_def] = torch.cat([def_vel_unit[b],vel_pred_norm_[b,ind_def].unsqueeze(0)],0)
                                 else:
                                     vel_pred[b,ind_def] = vel_pred_def
-                                posxy[b,ind_def,:] = posxy_def
+                                posxy[b,ind_def,:] = posxy_prev[b,ind_def,:] + vel_pred_def/Fs*self_max_v
+                                # posxy_def
                     
                 else:
                     def_xy_new = def_xy_prev + def_Pball/dist_def_Pball.unsqueeze(1).repeat(1,2)*defender_speed/Fs*self_max_v
